@@ -1,0 +1,11 @@
+[Unit]   
+Description=The Redis Server 
+After=syslog.target 
+After=network.target 
+[Service] 
+Type=forking 
+ExecStart=/etc/init.d/redis_6379  start 
+ExecReload=/etc/init.d/redis_6379  restart 
+ExecStop=/etc/init.d/redis_6379  stop 
+[Install] 
+WantedBy=multi-user.target

@@ -1,0 +1,122 @@
+---
+- name: hadoop_env
+  hosts: hadoop
+  tasks:
+    - name: hosts
+      copy: src=/etc/hosts dest=/etc/hosts force=yes
+    - name: mkdatadir
+      file: path=/var/hadoop state=directory force=yes
+- name: hadoop_node
+  hosts: node
+  tasks:
+    - name: install_java
+      yum: name=java-1.8.0-openjdk-devel state=present 
+    - name: get_hadoop
+      unarchive: src=/var/ftp/hadoop/hadoop-2.7.7.tar.gz dest=/usr/local/ owner=root group=root copy=yes
+    - name: mv_hadoop
+      shell: mv /usr/local/hadoop-2.7.7 /usr/local/hadoop
+    - name: hadoop_conf
+      copy: src="{{item}}" dest=/usr/local/hadoop/etc/hadoop/ force=yes
+      with_items:
+        - hadoop-env.sh
+        - mapred-site.xml
+        - slaves
+        - core-site.xml
+        - hdfs-site.xml
+        - yarn-site.xml
+    - name: get_zk
+      unarchive: src=/var/ftp/hadoop/zookeeper-3.4.13.tar.gz dest=/usr/local/ owner=root group=root copy=yes
+    - name: mv_zk
+      shell: mv /usr/local/zookeeper-3.4.13 /usr/local/zookeeper
+    - name: zk_conf
+      copy: src=zoo.cfg dest=/usr/local/zookeeper/conf force=yes
+    - name: mkidfile
+      shell: 'mkdir /tmp/zookeeper && grep -Po "\d(?==${HOSTNAME})" /usr/local/zookeeper/conf/zoo.cfg > /tmp/zookeeper/myid'
+    - name: startzk
+      shell: /usr/local/zookeeper/bin/zkServer.sh  start
+- name: hadoop_master
+  hosts: master
+  tasks:
+    - name: get_rsa
+      copy: src=/root/.ssh/id_rsa dest=/root/.ssh/id_rsa mode=0600 force=yes
+    - name: install_java
+      yum: name=java-1.8.0-openjdk-devel state=present 
+    - name: mkgroup
+      group: name=nfsuser gid=800
+    - name: mkuser
+      user: name=nfsuser uid=800 group=nfsuser system=yes home=/var/hadoop
+    - name: get_hadoop
+      unarchive: src=/var/ftp/hadoop/hadoop-2.7.7.tar.gz dest=/usr/local/ owner=root group=root copy=yes
+    - name: mv_hadoop
+      shell: mv /usr/local/hadoop-2.7.7 /usr/local/hadoop
+    - name: ssh_conf
+      lineinfile: path=/etc/ssh/ssh_config regexp="   StrictHostKeyChecking ask" line="StrictHostKeyChecking no"
+    - name: hadoop_conf
+      copy: src="{{item}}" dest=/usr/local/hadoop/etc/hadoop/ force=yes
+      with_items:
+        - hadoop-env.sh
+        - mapred-site.xml
+        - slaves
+        - core-site.xml
+        - hdfs-site.xml
+        - yarn-site.xml
+- name: hadoop_bmaster
+  hosts: bmaster
+  tasks:
+    - name: get_rsa
+      copy: src=/root/.ssh/id_rsa dest=/root/.ssh/id_rsa mode=0600 force=yes
+    - name: install_java
+      yum: name=java-1.8.0-openjdk-devel state=present 
+- hosts: node
+  tasks:
+    - name: startjns
+      shell: /usr/local/hadoop/sbin/hadoop-daemon.sh start journalnode
+- hosts: master
+  tasks:
+    - file: path=/usr/local/hadoop/etc/hadoop/exclude state=directory  mode=0755 
+    - shell: rsync -avSHX --delete /usr/local/hadoop root@"{{item}}":/usr/local/
+      with_items:
+        - nfsgws
+        - hadoop-0002
+    - name: initzk
+      shell: /usr/local/hadoop/bin/hdfs zkfc -formatZK
+    - name: inithdfs
+      shell: /usr/local/hadoop/bin/hdfs namenode -format
+    - name: initjns
+      script: initjns.sh
+      notify: hdfsdata
+  handlers:
+    - name: hdfsdata
+      shell: rsync -avSHX --delete  /var/hadoop root@hadoop-0002:/var/
+- hosts: node
+  tasks:
+    - name: stop_jns
+      shell: /usr/local/hadoop/sbin/hadoop-daemon.sh stop journalnode
+- hosts: master
+  tasks:
+    - name: start_all
+      shell: /usr/local/hadoop/sbin/start-all.sh
+    - shell: rsync -avSHX --delete  /usr/local/hadoop/logs root@nfsgws:/usr/local/hadoop/
+- hosts: bmaster
+  tasks:
+    - name: start_baresourceman
+      shell: /usr/local/hadoop/sbin/yarn-daemon.sh  start  resourcemanager
+- name: hadoop_nfsgw
+  hosts: nfsgw
+  tasks:
+    - name: rm_nfs_rpc
+      yum: name=nfs-utils,rpcbind state=absent
+    - name: install_java
+      yum: name=java-1.8.0-openjdk-devel state=present 
+    - name: mkgroup
+      group: name=nfsuser gid=800
+    - name: mkuser
+      user: name=nfsuser uid=800 group=nfsuser system=yes home=/var/hadoop
+    - copy: src=hdfs-site-nfs.xml dest=/usr/local/hadoop/etc/hadoop/hdfs-site.xml force=yes
+    - name: tmpdir
+      file: path=/var/nfstmp state=directory owner=nfsuser group=nfsuser mode=0755 
+    - shell: rm -rf /usr/local/hadoop/logs/*
+    - name: chusage
+      shell: setfacl -m u:nfsuser:rwx /usr/local/hadoop/logs
+    - shell: /usr/local/hadoop/sbin/hadoop-daemon.sh  --script /usr/local/hadoop/bin/hdfs  start  portmap
+    - shell: su - -c "/usr/local/hadoop/sbin/hadoop-daemon.sh  --script /usr/local/hadoop/bin/hdfs  start  nfs3" nfsuser

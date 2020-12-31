@@ -1,0 +1,47 @@
+---
+- name: same_install
+  hosts: redis
+  tasks:
+    - name: copy_hosts
+      copy: src=/etc/hosts dest=/etc/hosts force=yes
+    - name: gcc_make
+      yum: name=gcc,make state=present update_cache=yes
+    - name: get_redis
+      unarchive: src=/var/ftp/mysoft/redis/redis-4.0.8.tar.gz dest=/root/ owner=root group=root copy=yes
+    - name: config
+      shell: chdir=/root/redis-4.0.8/ make && make install
+    - name: init_redis
+      script: redis/initredis.sh
+    - name: redis_install
+      template: src=redis/{{item.a}} dest={{item.b}} 
+      with_items:
+        - {"a": "6379.conf", "b": "/etc/redis/6379.conf"}
+        - {"a": "redis_6379", "b": "/etc/init.d/redis_6379"}
+    - name: mana_systemd
+      copy: src=redis/redis.service dest=/usr/lib/systemd/system/redis.service
+    - name: reload
+      shell: "{{item}}"
+      with_items:
+        - systemctl daemon-reload
+        - killall -9 redis-server
+        - rm -rf /var/run/redis_6379.pid
+        - systemctl start redis
+
+- hosts: manager
+  tasks:
+    - name: ruby_gem
+      yum: name=ruby,rubygems state=present update_cache=yes
+    - name: get_gem
+      copy: src=/var/ftp/mysoft/redis/redis-3.2.1.gem dest=/root/
+    - shell: gem install /root/redis-3.2.1.gem
+    - name: mk_bin
+      file: path=/root/bin state=directory force=yes
+    - name: copy_ruby
+      copy: src=redis/redis-trib.rb dest=/root/bin/redis-trib.rb mode=07777 force=yes
+    - name: startcluster
+      script: redis/initcluster.sh
+    - name: debug
+      shell: /root/bin/redis-trib.rb info redis-0001:6379
+      register: secret
+    - debug: msg={{secret.stdout}}
+

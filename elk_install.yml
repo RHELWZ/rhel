@@ -1,0 +1,45 @@
+---
+- name: install_els
+  hosts: es
+  tasks:
+    - name: copy_hosts
+      copy: src=/etc/hosts dest=/etc/hosts force=yes
+    - name: install_java
+      yum: name=java-1.8.0-openjdk-devel state=present update_cache=yes
+    - name: install_els
+      yum: name=elasticsearch state=present update_cache=yes
+    - template: src=elasticsearch.yml dest=/etc/elasticsearch/elasticsearch.yml force=yes
+    - name: upservice 
+      service: name=elasticsearch state=started enabled=yes
+      notify: elsok
+  handlers:
+    - name: elsok
+      ignore_errors: yes
+      shell: chdir=/usr/share/elasticsearch/bin ./plugin install ftp://192.168.1.250/"{{item}}"
+      with_items:
+        - bigdesk-master.zip
+        - elasticsearch-head-master.zip
+        - elasticsearch-kopf-master.zip
+- name: install_kibana
+  hosts: kiba
+  tasks: 
+    - name: copy_hosts
+      copy: src=/etc/hosts dest=/etc/hosts force=yes
+    - name: install_kibana
+      yum: name=kibana state=present update_cache=yes
+    - name: conf_file
+      copy: src=kibana.yml dest=/opt/kibana/config/kibana.yml force=yes
+    - name: upservice
+      service: name=kibana state=started enabled=yes
+- name: install_kibana
+  hosts: logs
+  tasks:
+    - name: copy_hosts
+      copy: src=/etc/hosts dest=/etc/hosts force=yes
+    - name: install_java
+      yum: name=java-1.8.0-openjdk-devel state=present update_cache=yes
+    - name: install_logstash
+      yum: name=logstash state=present update_cache=yes
+    - name: logstash_file
+      copy: src=logstash.conf dest=/etc/logstash/logstash.conf force=yes
+
