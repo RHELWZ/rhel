@@ -106,20 +106,14 @@
   hosts: msake
   tasks:
     - name: ke_ch_conf
-      copy: src=mha-cat-ha-ke/"{{item}}" dest=/etc/keepalived/"{{item}}" mode=0755 force=yes
-      with_items:
-        - keepalived.conf
-        - check_ha.sh
+      copy: src=mha-cat-ha-ke/keepalived.conf dest=/etc/keepalived/keepalived.conf force=yes
     - name: start_ke
       service: name=keepalived state=started enabled=yes
 - name: install_ke
   hosts: buake
   tasks:
     - name: bke_ch_conf
-      copy: src=mha-cat-ha-ke/"{{item}}" dest=/etc/keepalived/"{{item}}" mode=0755 force=yes
-      with_items:
-        - keepalived.conf.ba
-        - check_ha.sh
+      copy: src=mha-cat-ha-ke/keepalived.conf.ba dest=/etc/keepalived/keepalived.conf.ba force=yes
     - name: start_bke
       service: name=keepalived state=started enabled=yes
 
