@@ -1,0 +1,131 @@
+---
+- name: public_conf
+  hosts: mha
+  tasks:
+    - name: get_rsa
+      copy: src=/root/.ssh/id_rsa dest=/root/.ssh/id_rsa mode=0600 force=yes
+    - name: mk_dir
+      file: path=/root/mysql state=directory force=yes
+    - name: get_mysql
+      unarchive: src=/var/ftp/mysoft/mysql/mysql-5.7.17.tar dest=/root/mysql/  copy=yes
+    - name: mha_app
+      copy: src=/var/ftp/mysoft/mysql/mha dest=/root/ force=yes
+    - name: install_yilai
+      shell: yum -y install /root/mha/perl* /root/mha/mha4mysql-node-0.56-0.el6.noarch.rpm
+    - name: install_mysql
+      script: mha-cat-ha-ke/install_mysql.sh
+- name: install_master
+  hosts: mdb
+  tasks:
+    - name: mk_conf
+      template: src=mha-cat-ha-ke/my.cnf.ma dest=/etc/my.cnf force=yes
+    - name: change_conf
+      script: mha-cat-ha-ke/mysqlid.sh
+    - name: mk_user
+      shell: mysql -uroot -p'123qqq...A' -e 'grant replication slave on *.* to repluser@"%" identified by "123qqq...A"'
+    - name: mk_vip
+      shell: ifconfig eth0:1 192.168.1.40/24
+- name: install_bmaster
+  hosts: bmdb
+  tasks:
+    - name: mk_conf
+      template: src=mha-cat-ha-ke/my.cnf.ma dest=/etc/my.cnf force=yes
+    - name: change_conf
+      script: mha-cat-ha-ke/mysqlid.sh
+    - name: start_slave
+      script: mha-cat-ha-ke/tongbu.sh
+- name: install_backup
+  hosts: bdb
+  tasks:
+    - name: mk_conf
+      template: src=mha-cat-ha-ke/my.cnf.ba dest=/etc/my.cnf force=yes
+    - name: change_conf
+      script: mha-cat-ha-ke/mysqlid.sh
+    - name: start_slave
+      script: mha-cat-ha-ke/tongbu.sh
+- name: user
+  hosts: mdb
+  tasks:
+    - name: repl_user
+      shell: mysql -uroot -p'123qqq...A' -e 'grant replication slave on *.* to repluser@"%" identified by "123qqq...A"'
+    - name: monitor_user
+      shell: mysql -uroot -p'123qqq...A' -e 'grant all on *.* to root@"%" identified by "123qqq...A"'
+    - name: read_user
+      shell: mysql -uroot -p'123qqq...A' -e 'grant select on *.* to readuser@"%" identified by "123qqq...A"'
+    - name: mk_db
+      shell: mysql -uroot -p'123qqq...A' -e 'create database db1'
+- name: install_perl
+  hosts: mmanager
+  tasks:
+    - name: install_yilai
+      yum: name=perl-ExtUtils*,perl-CPAN* state=present
+    - name: get_manager
+      unarchive: src=/var/ftp/mysoft/mysql/mha/mha4mysql-manager-0.56.tar.gz dest=/root/  copy=yes
+    - name: perl_config
+      shell: chdir=/root/mha4mysql-manager-0.56 perl Makefile.PL && make && make install
+    - name: mk_confdir
+      file: path=/etc/mha state=directory force=yes
+    - name: conf_file
+      copy: src=mha-cat-ha-ke/"{{item}}" dest=/etc/mha/ mode=0755 force=yes
+      with_items:
+        - app1.cnf
+        - master_ip_failover
+    - name: check_ssh
+      shell: masterha_check_ssh --conf=/etc/mha/app1.cnf
+      register: ssh_ch
+    - debug: msg={{ssh_ch.stdout}}
+    - name: check_repl
+      shell: masterha_check_repl --conf=/etc/mha/app1.cnf
+      register: repl_ch
+    - debug: msg={{repl_ch.stdout}}
+    - name: start_mha
+      shell: masterha_manager --conf=/etc/mha/app1.cnf --remove_dead_master_conf --ignore_last_failover&
+- name: install_perl
+  hosts: mycat
+  tasks:
+    - name: install_java
+      yum: name=java-1.8.0-openjdk-devel state=present
+    - name: get_mycat
+      unarchive: src=/var/ftp/mysoft/mysql/Mycat-server-1.6-RELEASE-20161028204710-linux.tar.gz dest=/root/  copy=yes
+    - name: mv
+      shell: mv /root/mycat /usr/local
+    - name: readwritesplit_conf
+      copy: src=mha-cat-ha-ke/schema.xml dest=/usr/local/mycat/conf/schema.xml force=yes
+    - name: start_mycat
+      shell: /usr/local/mycat/bin/mycat start
+- name: install_ha
+  hosts: ha-ke
+  tasks:
+    - name: install_ha_ke
+      yum: name=haproxy,keepalived state=present
+    - name: ha_conf
+      copy: src=mha-cat-ha-ke/haproxy.cfg dest=/etc/haproxy/haproxy.cfg force=yes
+    - name: start_ha
+      service: name=haproxy state=started enabled=yes
+- name: install_ke
+  hosts: msake
+  tasks:
+    - name: ke_ch_conf
+      copy: src=mha-cat-ha-ke/"{{item}}" dest=/etc/keepalived/"{{item}}" mode=0755 force=yes
+      with_items:
+        - keepalived.conf
+        - check_ha.sh
+    - name: start_ke
+      service: name=keepalived state=started enabled=yes
+- name: install_ke
+  hosts: buake
+  tasks:
+    - name: bke_ch_conf
+      copy: src=mha-cat-ha-ke/"{{item}}" dest=/etc/keepalived/"{{item}}" mode=0755 force=yes
+      with_items:
+        - keepalived.conf.ba
+        - check_ha.sh
+    - name: start_bke
+      service: name=keepalived state=started enabled=yes
+
+
+
+
+
+
+
