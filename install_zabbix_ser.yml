@@ -1,0 +1,45 @@
+---
+- name: zabbix_server
+  hosts: ser
+  tasks:
+    - name: host_conf
+      copy: src=/etc/hosts dest=/etc/hosts force=yes
+    - name: install_npkg
+      yum: name=nginx,pcre-devel,openssl-devel,autoconf,zlib-devel state=present update_cache=yes
+    - name: n_conf
+      copy: src=zabbix/nginx.conf dest=/usr/local/nginx/conf/nginx.conf force=yes
+    - name: install_ppkg
+      yum: name=php,php-fpm,php-mysql,php-gd,php-ldap,php-xml,php-bcmath,php-mbstring state=present update_cache=yes
+    - name: p_conf
+      copy: src=zabbix/php.ini dest=/etc/php.ini force=yes
+    - name: install_mariadb
+      yum: name=mariadb,mariadb-server,mariadb-devel state=present update_cache=yes
+    - name: start_server
+      service: name="{{item}}" state=started enabled=yes
+      with_items:
+        - nginx
+        - php-fpm
+        - mariadb
+    - name: tar_zabbix_server
+      unarchive: src=/var/ftp/zabbix-3.4.4.tar.gz dest=/root/  copy=yes
+    - name: install_yilai
+      yum: name=gcc,make,net-snmp-devel,curl-devel,libevent-devel
+    - name: useradd_zabbix
+      user: name=zabbix shell=/sbin/nologin
+    - name: install_zabbix_server
+      shell: chdir=/root/zabbix-3.4.4 ./configure --enable-server --enable-proxy --enable-agent --with-mysql=/usr/bin/mysql_config --with-net-snmp --with-libcurl && make && make install
+    - name: webpage
+      shell: cp -a /root/zabbix-3.4.4/frontends/php/* /usr/local/nginx/html/
+    - shell: chown -R apache:apache /usr/local/nginx/html/
+    - name: m_conf
+      shell: mysql -e "create database zabbix character set utf8"
+    - shell: mysql -e 'grant all on zabbix.* to zabbix@"localhost" identified by "zabbix"'
+    - shell: chdir=/root/zabbix-3.4.4/database/mysql mysql -uzabbix -pzabbix zabbix < schema.sql && mysql -uzabbix -pzabbix zabbix < images.sql && mysql -uzabbix -pzabbix zabbix < data.sql
+    - name: zabbix_conf
+      copy: src=zabbix/zabbix_server.conf dest=/usr/local/etc/zabbix_server.conf force=yes
+    - name: system_zabbix
+      copy: src=zabbix/zabbix_server.service dest=/usr/lib/systemd/system/zabbix_server.service force=yes
+    - name: start_zabbix
+      service: name=zabbix_server state=started enabled=yes
+
+

@@ -1,0 +1,31 @@
+---
+# tasks file for nginx
+- name: install nginx
+  yum: name=nginx,pcre-devel,openssl-devel,autoconf,automake state=present update_cache=yes
+- name: install php
+  yum: name=php,php-fpm,php-mysql,php-devel,php-cli state=present update_cache=yes
+- name: get_redis_cluster_php
+  unarchive: src=/var/ftp/{{item}} dest=/root/ owner=root group=root copy=yes
+  with_items:
+    - php-redis-demo.tar.gz
+    - redis-cluster-4.3.0.tgz
+- name: change_php_conf
+  shell: chdir=/root/redis-4.3.0 phpize && ./configure --with-php-config=/usr/bin/php-config && make  &&  make install
+- name: copy_php_conf
+  copy: src="{{item.a}}" dest="{{item.b}}" force=yes
+  with_items:
+    - {a: "php.ini",b: "/etc/php.ini"}
+    - {a: "www.conf",b: "/etc/php-fpm.d/www.conf"}
+  notify: phpset
+- name: set server
+  shell: mv /root/php-redis-demo/* /usr/local/nginx/html/ 
+  notify: set
+- name: set webpage
+  template: src=index.html dest=/usr/local/nginx/html/index.html force=yes
+- name: set_conf
+  copy: src=nginx.conf dest=/usr/local/nginx/conf/nginx.conf force=yes
+- name: install_gotologstash
+  yum: name=filebeat state=present update_cache=yes
+- name: config_file
+  copy: src=filebeat.yml dest=/etc/filebeat/filebeat.yml force=yes
+  notify: conffile

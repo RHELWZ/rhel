@@ -1,0 +1,91 @@
+all:
+  children:
+    ceph:
+      children:
+        deploy:
+          hosts:
+            192.168.1.23: {}
+        osd:
+          hosts:
+            192.168.1.24: {}
+            192.168.1.25: {}
+    es:
+      hosts:
+        es-0001: {}
+        es-0002: {}
+        es-0003: {}
+    kiba:
+      hosts:
+        192.168.1.74: {}
+    logs:
+      hosts:
+        192.168.1.75: {}
+    web:
+      hosts:
+        192.168.1.11: {}
+        192.168.1.12: {}
+        192.168.1.13: {}
+    hadoop:
+      children:
+        master:
+          hosts:
+            192.168.1.101: {}
+        bmaster:
+          hosts:
+            192.168.1.102: {}
+        node:
+          hosts:
+            192.168.1.103: {}
+            192.168.1.104: {}
+            192.168.1.105: {}
+        nfsgw:
+          hosts:
+            192.168.1.106: {}
+    redis:
+      children:
+        manager:
+          hosts:
+            192.168.1.31: {}
+        redis_node:
+          hosts:
+            192.168.1.32: {}
+            192.168.1.33: {}
+            192.168.1.34: {}
+            192.168.1.35: {}
+            192.168.1.36: {}
+    mha:
+      children:
+        mmanager:
+          hosts:
+            192.168.1.45: {}
+        mdb:
+          hosts:
+            192.168.1.41: {}
+        bmdb:
+          hosts:
+            192.168.1.42: {}
+        bdb:
+          hosts:
+            192.168.1.43: {}
+            192.168.1.44: {}
+    mycat:
+      hosts:
+        192.168.1.46: {}
+        192.168.1.47: {}
+    ha-ke:
+      children:
+        msake:
+          hosts:
+            192.168.1.48: {}
+        buake:
+          hosts:
+            192.168.1.49: {}
+    zabbix:
+      children:
+        ser:
+          hosts:
+            192.168.1.51: {}
+        pro:
+          hosts:
+            192.168.1.52: {}
+    ungrouped: {}

@@ -1,0 +1,18 @@
+---
+- name: zabbix_agent
+  hosts: web
+  tasks:
+    - name: host_conf
+      copy: src=/etc/hosts dest=/etc/hosts force=yes
+    - name: mk_fontfile
+      file: path=/usr/local/nginx/html/fonts state=directory force=yes
+    - name: font
+      copy: src=zabbix/simkai.ttf dest=/usr/local/nginx/html/fonts/DejaVuSans.ttf force=yes
+    - name: install_yilai
+      yum: name=autoconf,zlib-devel state=present update_cache=yes
+    - name: install_zabbix_agent
+      yum: name=zabbix state=present update_cache=yes
+    - name: zabbix_conf
+      template: src=zabbix/zabbix_agentd.conf dest=/usr/local/etc/zabbix_agentd.conf force=yes
+    - name: start_zabbix
+      service: name=zabbix_agent state=started enabled=yes

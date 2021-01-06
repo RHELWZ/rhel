@@ -1,0 +1,26 @@
+[server default]
+manager_workdir=/etc/mha
+manager_log=/etc/mha/manager.log
+master_ip_failover_script=/etc/mha/master_ip_failover
+ssh_user=root
+ssh_port=22
+repl_user=repluser
+repl_password=123qqq...A
+user=root
+password=123qqq...A
+[server1]
+hostname=192.168.1.41
+candidate_master=1
+port=3306
+[server2]
+hostname=192.168.1.42
+candidate_master=1
+port=3306
+[server3]
+hostname=192.168.1.43
+no_master=1
+port=3306
+[server4]
+hostname=192.168.1.44
+no_master=1
+port=3306
