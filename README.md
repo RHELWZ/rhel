@@ -1,4 +1,4 @@
 # rhel
 ```python
->>>print('HELLO!')
+```HELLO!
 - 可以通过http下载
