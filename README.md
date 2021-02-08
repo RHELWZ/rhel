@@ -1,4 +1,6 @@
 # rhel
 ```python
 ```HELLO!
-- 可以通过http下载
+```
+/c/Users/Administrator/Desktop/linux
+```
