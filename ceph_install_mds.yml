@@ -1,0 +1,57 @@
+---
+- name: install mds
+  hosts: ceph
+  tasks:
+    - name: hostsconnect
+      copy: src=/etc/hosts dest=/etc/hosts force=yes
+    - shell: pip uninstall -y urllib3
+      ignore_errors: yes
+    - name: mon,osd,mds
+      yum: name=ceph-mon,ceph-osd,ceph-mds state=present update_cache=yes
+- name: other
+  hosts: osd
+  tasks:
+    - name: get rsa.pub
+      copy: src=/root/.ssh/authorized_keys dest=/root/.ssh/ mode=0600 force=yes
+- name: masterwork
+  hosts: deploy
+  tasks:
+    - name: get rsa
+      copy: src=/root/.ssh/{{item}} dest=/root/.ssh/ mode=0600 force=yes
+      with_items:
+        - id_rsa
+        - authorized_keys
+    - name: workdir
+      file: path=/root/ceph-deploy state=directory force=yes
+    - name: workrpm
+      yum: name=ceph-deploy state=present update_cache=yes
+    - name: ceph-new
+      shell: chdir=/root/ceph-deploy ceph-deploy new ceph-0001 ceph-0002 ceph-0003
+      args:
+        creates: /root/ceph/ceph.conf
+    - name: ceph-create-mon
+      shell: chdir=/root/ceph-deploy ceph-deploy mon create-initial
+      args:
+        creates: /etc/ceph/ceph.conf
+    - name: ceph-init-osd
+      shell: chdir=/root/ceph-deploy ceph-deploy  disk zap ceph-0001:vdb ceph-0001:vdc ceph-0002:vdb ceph-0002:vdc ceph-0003:vdb ceph-0003:vdc
+      args:
+        creates: /root/ceph/ceph.bootstrap-osd.keyring
+    - name: ceph-create-osd
+      shell: chdir=/root/ceph-deploy ceph-deploy osd create  ceph-0001:vdb ceph-0001:vdc ceph-0002:vdb ceph-0002:vdc ceph-0003:vdb ceph-0003:vdc
+      args:
+        creates: /root/ceph/ceph.bootstrap-osd.keyring
+    - name: ceph-create-mds
+      shell: chdir=/root/ceph-deploy ceph-deploy mds create ceph-0003
+      args:
+        creates: /root/ceph/ceph.bootstrap-mds.keyring
+    - name: create pool inode
+      shell: chdir=/root/ceph-deploy ceph osd pool create cephfs_metadata 128
+    - name: create pool block
+      shell: chdir=/root/ceph-deploy ceph osd pool create cephfs_data 128
+    - name: create filesystem
+      shell: chdir=/root/ceph-deploy ceph fs new cephda cephfs_metadata cephfs_data
+    - name: tell secretfile
+      shell: cat /etc/ceph/ceph.client.admin.keyring
+      register: secret
+    - debug: msg={{secret.stdout}}

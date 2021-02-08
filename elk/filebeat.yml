@@ -1,0 +1,9 @@
+filebeat.config.modules:
+  path: ${path.config}/modules.d/*.yml
+  reload.enabled: false
+setup.template.settings:
+  index.number_of_shards: 3
+output.elasticsearch:
+  hosts: ["192.168.1.71:9200","192.168.1.72:9200"]
+  indices:
+    - index: "filebeat-nginx_log-%{+yyyy.MM.dd}"

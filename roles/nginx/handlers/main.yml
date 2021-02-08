@@ -1,0 +1,9 @@
+---
+# handlers file for nginx
+- name: set
+  service: name=nginx enabled=yes state=restarted
+- name: phpset
+  service: name=php-fpm enabled=yes state=restarted
+- name: conffile
+  service: name=filebeat enabled=yes state=restarted
+

@@ -1,0 +1,26 @@
+---
+- name: install_harbor
+  hosts: har
+  tasks:
+    - name: install_docker
+      yum: name=docker-ce state=present update_cache=yes
+    - name: open_ipforward
+      lineinfile: path=/etc/sysctl.conf insertafter="$" line="net.ipv4.ip_forward=1"
+    - name: sysctl_update
+      shell: sysctl -p
+    - name: get_docker_com
+      copy: src=/var/ftp/harbor/docker-compose dest=/usr/local/bin/docker-compose mode=0755 force=yes
+    - name: get_harbor
+      unarchive: src=/var/ftp/harbor/harbor-offline-installer-v1.2.0.tgz dest=/usr/local/ copy=yes
+    - name: confile_harbor.cfg
+      template: src=harbor/harbor.cfg dest=/usr/local/harbor/harbor.cfg force=yes
+    - name: confile_docker-com
+      copy: src=harbor/docker-compose.yml dest=/usr/local/harbor/docker-compose.yml force=yes
+    - name: confile_config.yml
+      copy: src=harbor/config.yml dest=/usr/local/harbor/common/templates/registry/config.yml force=yes
+    - name: start_docker
+      service: name=docker state=started enabled=yes
+    - name: start_harbor
+      shell: /usr/local/harbor/install.sh
+    - debug: msg="port:8099,client need set the docker.service file ExecStart=/usr/bin/dockerd --insecure-registry 192.168.1.61:8099"
+

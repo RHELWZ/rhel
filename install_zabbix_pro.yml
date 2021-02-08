@@ -1,0 +1,30 @@
+---
+- name: zabbix_proxy
+  hosts: pro
+  tasks:
+    - name: host_conf
+      copy: src=/etc/hosts dest=/etc/hosts force=yes
+    - name: install_mariadb
+      yum: name=mariadb,mariadb-server,mariadb-devel state=present update_cache=yes
+    - name: start_server
+      service: name=mariadb state=started enabled=yes
+    - name: tar_zabbix_server
+      unarchive: src=/var/ftp/zabbix-3.4.4.tar.gz dest=/root/  copy=yes
+    - name: install_yilai
+      yum: name=gcc,make,net-snmp-devel,curl-devel,libevent-devel
+    - name: useradd_zabbix
+      user: name=zabbix shell=/sbin/nologin
+    - name: install_zabbix_proxy
+      shell: chdir=/root/zabbix-3.4.4 ./configure --enable-proxy --enable-agent --with-mysql --with-net-snmp --with-libcurl && make && make install
+    - name: m_conf
+      shell: mysql -e "create database zabbix character set utf8"
+    - shell: mysql -e 'grant all on zabbix.* to zabbix@"localhost" identified by "zabbix"'
+    - shell: chdir=/root/zabbix-3.4.4/database/mysql mysql -uzabbix -pzabbix zabbix < schema.sql
+    - name: zabbix_conf
+      template: src=zabbix/zabbix_proxy.conf dest=/usr/local/etc/zabbix_proxy.conf force=yes
+    - name: system_zabbix
+      copy: src=zabbix/zabbix_proxy.service dest=/usr/lib/systemd/system/zabbix_proxy.service force=yes
+    - name: start_zabbix
+      service: name=zabbix_proxy state=started enabled=yes
+
+
