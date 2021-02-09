@@ -229,3 +229,12 @@ quit
   print(res1)
   print(res2)
   print(res3)
+  
+
+sendMessage(){
+        /usr/bin/curl --request POST 'http://openapi.luban.inhuawei.com:80/api/newPager/send/sms' \
+        --header 'X-HW-ID: isource-sms-notification' \
+        --header 'X-HW-APPKEY: sFLebUitQWxAlHaaEug=' \
+        --header 'Content-Type: application/json' \
+        --data "{'address':'y00498850,lwx308218', 'content':\"$1\"}"
+}
