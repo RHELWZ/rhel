@@ -244,3 +244,31 @@ git config --global core.quotepath false  # 让带中文的文件能上传到代
 
 要每30秒执行一次脚本，要么写sleep 30的while脚本，要么在crontab增加延迟
 * * * * * sleep 30; /var/script/run.sh >> log.txt
+
+#!/bin/bash
+sendMessage(){     # 发送短信函数
+/usr/bin/curl --request POST 'http://openapi.luban.inhuawei.com:80/api/newPager/send/sms' \
+--header 'X-HW-ID: isource-sms-notification' \
+--header 'X-HW-APPKEY: sFLebUitQWxAlHaaEug=' \
+--header 'Content-Type: application/json' \
+--data "{'address':'y00498850,lwx308218', 'content':\"$1\"}"
+}
+while :
+do
+    p=0
+    for i in {1..5}
+    do
+        #nums1=`ps -ef | grep sidekiq | grep -v grep | grep -Po "\[.*\]" | sed -nr 's/\[(.*)\]/\1/p' | awk '{print $1}'`
+        #nums2=`ps -ef | grep sidekiq | grep -v grep | grep -Po "\[.*\]" | sed -nr 's/\[(.*)\]/\1/p' | awk '{print $3}'`
+        n=`ps -ef | grep sidekiq | grep -v grep | grep -Po "\[.*\]" | sed -nr 's/\[(.*)\]/\1/p' | awk '{print $1/$3}'`
+        #n=`echo "scale=3;$nums1/$nums2*100"`
+        let p=$p+$n
+    done
+    if [ "$p" -ge 90 ]; then
+        #echo $p
+        sendMessage "当前磁盘使用率$p,超过90"
+    #else
+        #echo "当前磁盘使用率$p,正常"
+    fi
+    sleep 30
+done
