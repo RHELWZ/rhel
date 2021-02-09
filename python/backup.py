@@ -274,3 +274,9 @@ do
 done
 
 telnet 192.168.1.2:5432  # 可以查看防火墙
+/devcloud/log/catalina.out  # tomcat日志位置，172.31.224.130 黄dg；devcloud用户要对web.xml文件有属组属主和644权限
+
+clouddragon.huawei.com/release/home/release  # 版本包地址
+
+对F12 中返回的时间戳，可以在作业平台 grep -rnw /devcloud/log/gitlab -e '时间戳' 进行定位机器
+在welog中搜索时间戳也会找到底层日志编码，再根据编码到weblog中检索
