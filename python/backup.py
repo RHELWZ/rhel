@@ -240,4 +240,4 @@ sendMessage(){
 }
 
 
-git config --global core.quotepath false
+git config --global core.quotepath false  # 让带中文的文件能上传到代码仓
