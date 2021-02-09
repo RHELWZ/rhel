@@ -241,3 +241,6 @@ sendMessage(){
 
 
 git config --global core.quotepath false  # 让带中文的文件能上传到代码仓
+
+要每30秒执行一次脚本，要么写sleep 30的while脚本，要么在crontab增加延迟
+* * * * * sleep 30; /var/script/run.sh >> log.txt
