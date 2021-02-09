@@ -238,3 +238,6 @@ sendMessage(){
         --header 'Content-Type: application/json' \
         --data "{'address':'y00498850,lwx308218', 'content':\"$1\"}"
 }
+
+
+git config --global core.quotepath false
