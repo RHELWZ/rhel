@@ -159,3 +159,73 @@ create table (
 \q
 quit
 ```
+
+  """
+  Desc：python luban pager发送短信，邮件，espace方法
+  Remarks：安装python，然后pip3 install --proxy="http://域账号:域密码@proxy.huawei.com:8080" requests
+  """
+
+  import requests
+  import json
+
+  # 应用ID
+  id = "luban_pager"
+  # 密钥
+  appkey = "*************"
+  sms_url = "http://openapi.luban.inhuawei.com/api/newPager/send/sms"
+  email_url = "http://openapi.luban.inhuawei.com/api/newPager/send/email"
+  espace_url = "http://openapi.luban.inhuawei.com/api/newPager/send/espace"
+
+
+  def send_sms(phone, content):
+      # 短信发送
+      headers = {
+          "X-HW-ID": id,
+          'X-HW-APPKEY': appkey,
+          "content-type": "application/json",
+      }
+      body = {
+          "address": phone,
+          "content": content,
+      }
+      res = requests.post(url=sms_url, data=json.dumps(body), headers=headers)
+      return res.text
+
+  def send_email(address, subject, content):
+    # 邮件发送
+      headers = {
+          "X-HW-ID": id,
+          'X-HW-APPKEY': appkey,
+          "content-type": "application/json",
+      }
+      body = {
+          "address": address,
+          "title": subject,
+          "content": content,
+      }
+      res = requests.post(url=email_url, data=json.dumps(body), headers=headers)
+      return res.text
+
+
+  def send_espace(account, title, content):
+    # espace发送
+      headers = {
+          "X-HW-ID": id,
+          'X-HW-APPKEY': appkey,
+          "content-type": "application/json",
+      }
+      body = {
+          "address": account,
+          "title": title,
+          "content": content,
+      }
+      res = requests.post(url=espace_url, data=json.dumps(body), headers=headers)
+      return res.text
+
+  # 使用示例
+  res1 = send_sms("l00471413","python, cloudpager, sms service test!")
+  res2 = send_email("l00471413","pager", "python, cloudpager, email service test!")
+  res3 = send_espace("l00471413","pager", "python, cloudpager, espace service test!")
+  print(res1)
+  print(res2)
+  print(res3)
