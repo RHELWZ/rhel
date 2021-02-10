@@ -273,7 +273,7 @@ do
     sleep 30
 done
 
-telnet 192.168.1.2:5432  # 可以查看防火墙
+telnet 192.168.1.2 5432  # 可以查看防火墙
 /devcloud/log/catalina.out  # tomcat日志位置，172.31.224.130 黄dg；devcloud用户要对web.xml文件有属组属主和644权限
 
 clouddragon.huawei.com/release/home/release  # 版本包地址
