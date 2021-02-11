@@ -545,3 +545,27 @@ man bash， 找到说明ulimit的那一节：提供对shell及其启动的进程
 (17) sar -y 5 5       // TTY设备的活动状态
 (18) 将输出到文件(-o)和读取记录信息(-f)
 
+网络爬虫
+
+pip3 install requests    # http://docs.python-requests.org/zh_CN/latest/user/quickstart.html
+pip3 install beautifulsoup4    # http://beautifulsoup.readthedocs.io/zh_CN/latest/
+爬虫的第一步，获取整个网页的HTML信息，我们已经完成
+爬虫的第二步，解析HTML信息，提取我们感兴趣的内容
+提取的方法有很多，例如使用 正则表达式、Xpath、Beautiful Soup等
+
+小说下载，小说网站-笔趣看：URL：http://www.biqukan.com/
+《一念永恒》小说的第一章内容，URL：http://www.biqukan.com/1_1094/5403177.html
+右击网页，可以审查网站元素，来获得信息
+
+from bs4 import BeautifulSoup
+import requests
+if __name__ == "__main__":
+    target = 'http://www.biqukan.com/1_1094/5403177.html'
+    req = requests.get(url = target) 
+    html = req.text
+    bf = BeautifulSoup(html)  # 会返回一个对象
+    texts = bf.find_all('div', class_ = 'showtxt')  # find_all方法会在对象中
+    print(texts[0].text.replace('\xa0'*8,'\n\n'))
+
+
+
