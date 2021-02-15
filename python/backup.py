@@ -568,4 +568,36 @@ if __name__ == "__main__":
     print(texts[0].text.replace('\xa0'*8,'\n\n'))
 
 
+[Unit]
+Description=PostgreSQL database server
+After=network.target
+
+[Service]
+Type=forking
+
+User=postgres
+Group=postgres
+
+# Location of database directory
+Environment=PGDATA=/home/pgsql_data
+Environment=PGLOGS=/home/pgsql_logs
+
+
+# Where to send early-startup messages from the server (before the logging
+# options of postgresql.conf take effect)
+# This is normally controlled by the global default set by systemd
+# StandardOutput=syslog
+
+# Disable OOM kill on the postmaster
+OOMScoreAdjust=-1000
+
+ExecStart=/opt/pgsql/current/bin/pg_ctl -D ${PGDATA} -l ${PGLOGS}/postgresql.log start
+ExecStop=/opt/pgsql/current/bin/pg_ctl -D ${PGDATA} stop -m fast
+
+# Do not set any timeout value, so that systemd will not kill postmaster
+# during crash recovery.
+TimeoutSec=300
+
+[Install]
+WantedBy=multi-user.target
 
