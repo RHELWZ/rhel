@@ -601,3 +601,4 @@ TimeoutSec=300
 [Install]
 WantedBy=multi-user.target
 
+pip3 install pymysql -i http://mirrors.tools.huawei.com/pypi/simple/ --trusted-host mirrors.tools.huawei.com
