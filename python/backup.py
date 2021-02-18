@@ -602,3 +602,11 @@ TimeoutSec=300
 WantedBy=multi-user.target
 
 pip3 install pymysql -i http://mirrors.tools.huawei.com/pypi/simple/ --trusted-host mirrors.tools.huawei.com
+
+# encoding:utf-8
+import json
+dic = {"a": "null", "b": "false", "c": 1}
+
+
+js = json.dumps(dic, sort_keys=True, indent=4, separators=(',', ':'))
+print(js)
