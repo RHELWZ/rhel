@@ -787,3 +787,192 @@ login()
 5. 总结：
 本文分别实现了模拟登录的 3 种操作方法，建议优先选择第 2 种，即先获取 Cookies 再 Get 请求直接登录的方法。
 本文模拟登录的网站，仅需输入账号密码，不需要获取相关加密参数，比如 Authenticity_token ，同时也无需输入验证码，所以方法比较简单。但是还有很多网站模拟登录时，需要处理加密参数、验证码输入等问题。后续将会介绍
+
+tomcat 日志配置
+https://blog.csdn.net/WEB_CEO_INFO/article/details/1775895?utm_medium=distribute.pc_relevant.none-task-blog-searchFromBaidu-6.control&depth_1-utm_source=distribute.pc_relevant.none-task-blog-searchFromBaidu-6.control
+https://blog.csdn.net/qiuyinthree/article/details/72677173
+Tomcat日志设定
+Tomcat日志概述
+Tomcat 日志信息分为两类：
+
+运行中的日志，它主要记录运行的一些信息，尤其是一些异常错误日志信息。
+访问日志信息，它记录的访问的时间,IP,访问的资料等相关信息。
+访问日志
+启用访问日志
+默认 tomcat 不记录访问日志，如下方法可以使 tomcat 记录访问日志
+
+编辑${catalina}/conf/server.xml 文件(注:{catalina}是tomcat的安装目录)，把以下的注释 (<!-- -->) 去掉即可。
+
+ <!--
+        <Valve className="org.apache.catalina.valves.AccessLogValve"
+         directory="logs"  prefix="localhost_access_log." suffix=".txt"
+         pattern="common" resolveHosts="false"/>
+  -->
+配置tomcat写出更详细的日志
+通过对 2.1 示例中 pattern 项的修改，可以改变日志输出的内容。
+
+该项值可以为： common 与 combined ，这两个预先设置好的格式对应的日志输出内容如下：
+
+common 的值： %h %l %u %t %r %s %b
+combined 的值： %h %l %u %t %r %s %b %{Referer}i %{User-Agent}i
+pattern 也可以根据需要自由组合 , 例如 pattern="%h %l"
+
+对 于各 fields 字段的含义请参照:
+
+http://tomcat.apache.org/tomcat-6.0-doc/config/valve.html 中的 Access Log Valve 项。
+
+%a - Remote IP address
+%A - Local IP address
+%b - Bytes sent, excluding HTTP headers, or '-' if zero
+%B - Bytes sent, excluding HTTP headers
+%h - Remote host name (or IP address if resolveHosts is false)
+%H - Request protocol
+%l - Remote logical username from identd (always returns '-')
+%m - Request method (GET, POST, etc.)
+%p - Local port on which this request was received
+%q - Query string (prepended with a '?' if it exists)
+%r - First line of the request (method and request URI)
+%s - HTTP status code of the response
+%S - User session ID
+%t - Date and time, in Common Log Format
+%u - Remote user that was authenticated (if any), else '-'
+%U - Requested URL path
+%v - Local server name
+%D - Time taken to process the request, in millis
+%T - Time taken to process the request, in seconds
+%I - current request thread name (can compare later with stacktraces)
+%{xxx}i for incoming headers
+%{xxx}o for outgoing response headers
+%{xxx}c for a specific cookie
+%{xxx}r xxx is an attribute in the ServletRequest
+%{xxx}s xxx is an attribute in the HttpSession
+运行日志
+日志类型与级别
+Tomcat日志分为5类：catalina 、localhost 、manager 、admin 、host-manager
+日志的级别分为7种：SEVERE (highest value) > WARNING > INFO > CONFIG > FINE > FINER > FINEST (lowest value)
+设定日志级别
+修改 conf/logging.properties 中的内容，设定某类日志的级别
+
+示例：
+
+设置 catalina 日志的级别为： FINE
+1catalina.org.apache.juli.FileHandler.level = FINE
+禁用 catalina 日志的输出：
+1catalina.org.apache.juli.FileHandler.level = OFF
+输出 catalina 所有的日志消息均输出：
+1catalina.org.apache.juli.FileHandler.level = ALL
+应用程序日志或系统日志
+输出详细系统日志
+使用Log4j输出详细系统日志信息，快速诊断启动故障
+
+此例可弥补tomcat启动异常时输出的错误信息不足的问题，使用commons-logging和log4j搭配输出详尽的日志信息。
+
+以window环境下tomcat5.5.27为例：
+
+tomcat解压目录为：E: /tomcat5.5
+设置环境变量：CATALINA_HOME=E: /tomcat5.5
+下载 log4j 与 commons-logging
+Log4j 下载地址：http://logging.apache.org/log4j/1.2/download.html
+Commons-logging 下载地址：http://apache.freelamp.com/commons/logging/binaries/commons-logging-1.1.1-bin.zip
+本例将 commons-logging-1.1.1.jar 与 log4j-1.2.15.jar 放在 %TOMCAT_HOME%/bin 目录下（可根据需要放置在其位置）
+在 %TOMCAT_HOME%/bin 目录下新建两个文件 commons-logging.properties 、log4j.properties
+commons-logging.properties 文件内容如下：
+org.apache.commons.logging.Log=org.apache.commons.logging.impl.Log4JLogger
+log4j.properties 文件内容如下：
+log4j.rootLogger=WARN,stdout,file
+
+## 日志直接输出到控制台 ###
+
+log4j.appender.stdout=org.apache.log4j.ConsoleAppender
+log4j.appender.stdout.Target=System.out
+log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
+log4j.appender.stdout.layout.ConversionPattern=%d{ABSOLUTE} %l - %m%n
+
+## 日志输出到文件 SystemOut.log ###
+log4j.appender.file=org.apache.log4j.FileAppender
+log4j.appender.file.File=E: /tomcat5.5/ logs/SystemOut.log
+log4j.appender.file.Append=false
+log4j.appender.file.layout=org.apache.log4j.PatternLayout
+log4j.appender.file.layout.ConversionPattern=%d{ABSOLUTE} %l - %m%n
+该配置文件可详细参照：http://www.minaret.biz/tips/tomcatLogging.html#log4j_properties
+修改 catalina.bat 文件
+将
+set CLASSPATH=%CLASSPATH%;%CATALINA_HOME%/bin/bootstrap.jar
+替换为
+set CLASSPATH=%CLASSPATH%;%CATALINA_HOME%/bin/bootstrap.jar;%CATALINA_HOME%/bin/commons-logging-1.1.jar;%CATALINA_HOME%/bin/log4j-1.2.13.jar;%CATALINA_HOME%/bin
+通过startup.bat启动就会用log4j来输出启动日志了。
+在E:/tomcat5.5/logs/SystemOut.log文件中查看输出的日志
+应用程序中使用log4j
+从如下网址下载log4j：http://logging.apache.org/log4j/1.2/download.html
+创建Java工程。
+添加log4j.jar到工程的编译路径下。
+创建名称为log4j.properties的文件，写入如下内容：
+### direct log messages to stdout ###
+log4j.appender.stdout=org.apache.log4j.ConsoleAppender
+log4j.appender.stdout.Target=System.out
+log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
+log4j.appender.stdout.layout.ConversionPattern=%d{ABSOLUTE} %5p %c{1}:%L - %m%n
+log4j.rootLogger=debug, stdout
+创建类并添加如下内容：
+import org.apache.log4j.Logger;
+public class LogClass {
+        private static org.apache.log4j.Logger log = Logger
+                        .getLogger (LogClass. class );
+        public static void main(String[] args) {
+                log .trace( "Trace" );
+                log .debug( "Debug" );
+                log .info( "Info" );
+                log .warn( "Warn" );
+                log .error( "Error" );
+                log .fatal( "Fatal" );
+        }
+}
+编译运行，可在控制台中看到如下内容：
+10:38:24,797 DEBUG LogClass:11 - Debug
+10:38:24,812  INFO LogClass:12 - Info
+10:38:24,812  WARN LogClass:13 - Warn
+10:38:24,812 ERROR LogClass:14 - Error
+10:38:24,812 FATAL LogClass:15 - Fatal
+根据级别控制日志输出内容：
+将 log4j.rootLogger= debug , stdout 变更为 log4j.rootLogger=Warn, stdout
+
+输出内容如下：
+
+10:41:15,488  WARN LogClass:13 - Warn
+10:41:15,504 ERROR LogClass:14 - Error
+10:41:15,504 FATAL LogClass:15 – Fatal
+更改日志输出内容
+log4j.rootCategory=INFO, stdout , R
+此句为将等级为INFO的日志信息输出到stdout和R这两个目的地。
+
+等级可分为OFF、FATAL、ERROR、WARN、INFO、DEBUG、ALL，如果配置OFF则不打出任何信息，如果配置为INFO这样只显示INFO,WARN,ERROR的log信息，而DEBUG信息不会被显示。
+
+log4j.appender.stdout=org.apache.log4j.ConsoleAppender
+此句为定义名为stdout的输出端是哪种类型，可以是：
+
+org.apache.log4j.FileAppender	文件
+org.apache.log4j.DailyRollingFileAppender	每天产生一个日志文件
+org.apache.log4j.RollingFileAppender	文件大小到达指定尺寸的时候产生一个新的文件
+org.apache.log4j.WriterAppender	将日志信息以流格式发送到任意指定的地方
+log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
+此句为定义名为stdout的输出端的layout是哪种类型
+
+org.apache.log4j.HTMLLayout	以HTML表格形式布局
+org.apache.log4j.PatternLayout	可以灵活地指定布局模式
+org.apache.log4j.SimpleLayout	包含日志信息的级别和信息字符串
+org.apache.log4j.TTCCLayout	包含日志产生的时间、线程、类别等等信息
+log4j.appender.stdout.layout.ConversionPattern= [QC] %p [%t] %C.%M(%L) | %m%n
+如果使用 pattern 布局就要指定的打印信息的具体格式 ConversionPattern ，打印参数如下：
+
+具体的设定参照：http://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/PatternLayout.html
+
+%m	输出代码中指定的消息
+%p	输出优先级，即DEBUG，INFO，WARN，ERROR，FATAL
+%r	输出自应用启动到输出该log信息耗费的毫秒数
+%c	输出所属的类目，通常就是所在类的全名
+%t	输出产生该日志事件的线程名
+%n	输出一个回车换行符，Windows平台为“rn”，Unix平台为“n”
+%d	输出日志时间点的日期或时间，默认格式为ISO8601，也可以指定格式，如:%d{yyyymmddHH:mm:ss,SSS},输出:2002101822:10:28,921
+%l	输出日志事件的发生位置，包括类目名、发生的线程，以及在代码中的行数。
+[QC]	是log信息的开头，可以为任意字符，一般为项目简称。
+	
