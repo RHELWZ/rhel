@@ -737,7 +737,118 @@ print(response.status_code)
 print(response.text)
 可以看到，添加了 Cookie 后就不用再 POST 请求了，直接 GET 请求目标网页即可。可以看到，也能成功获取到网页内容。
 
+Cookie的使用
 
+用 Python 来登录网站, 用Cookies记录登录信息, 然后就可以抓取登录之后才能看到的信息。
+
+什么是cookies?
+
+Cookie，指某些网站为了辨别用户身份、进行session跟踪而储存在用户本地终端上的数据（通常经过加密）。
+比如说有些网站需要登录后才能访问某个页面，在登录之前，你想抓取某个页面内容是不允许的。那么我们可以利用Urllib库保存我们登录的Cookie，然后再抓取其他页面就达到目的了。
+opener的概念
+当你获取一个URL你使用一个opener(一个urllib2.OpenerDirector的实例)。在前面，我们都是使用的默认的opener，也就是urlopen。
+
+urlopen是一个特殊的opener，可以理解成opener的一个特殊实例，传入的参数仅仅是url，data，timeout。
+如果我们需要用到Cookie，只用这个opener是不能达到目的的，所以我们需要创建更一般的opener来实现对Cookie的设置。
+Cookielib
+cookielib模块的主要作用是提供可存储cookie的对象，以便于与urllib2模块配合使用来访问Internet资源。Cookielib模块非常强大，我们可以利用本模块的CookieJar类的对象来捕获cookie并在后续连接请求时重新发送，比如可以实现模拟登录功能。该模块主要的对象有CookieJar、FileCookieJar、MozillaCookieJar、LWPCookieJar。
+它们的关系：CookieJar —-派生—->FileCookieJar  —-派生—–>MozillaCookieJar和LWPCookieJar
+
+使用cookie登录的步骤
+1）获取Cookie保存到变量
+
+import urllib.request
+import http.cookiejar
+
+URL_ROOT = r'http://d.weibo.com/'
+
+cookie = http.cookiejar.CookieJar()  # 声明一个CookieJar对象实例来保存cookie
+handler = urllib.request.HTTPCookieProcessor(cookie)  # 利用urllib2库的HTTPCookieProcessor对象来创建cookie处理器
+opener = urllib.request.build_opener(handler)  # 通过handler来构建opener
+
+response = opener.open(URL_ROOT)  # 此处的open方法同urllib2的urlopen方法，也可以传入request
+
+for item in cookie:
+    print('Name = ' + item.name)
+    print('Value = ' + item.value)
+我们使用以上方法将cookie保存到变量中，然后打印出了cookie中的值，运行结果如下
+Name = YF-Page-G0
+
+Value = dc8d8d4964cd93a7c3bfa7640c1bd10c
+
+Note:py3中opener也可以这样使用：
+
+request = urllib.request.Request(URL_ROOT, postdata, headers)
+response = opener.open(request)
+或者：
+
+urllib.request.install_opener(opener)
+request = urllib.request.Request(URL_ROOT, postdata, headers)
+response = urllib.request.urlopen(request)2）保存Cookie到文件上面我们将cookie保存到了cookie这个变量中，如果我们想将cookie保存到文件中该怎么做呢？这时，我们就要用到FileCookieJar这个对象了，在这里我们使用它的子类MozillaCookieJar来实现Cookie的保存
+ 
+
+import urllib.request, urllib.parse, urllib.error
+import http.cookiejar
+
+URL_ROOT = 'http://www.jobbole.com/login/'
+values = {'name': '******', 'password': '******'}
+postdata = urllib.parse.urlencode(values).encode()
+user_agent = r'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36'
+headers = {'User-Agent': user_agent}
+
+cookie_filename = 'cookie.txt'
+cookie = http.cookiejar.LWPCookieJar(cookie_filename)
+handler = urllib.request.HTTPCookieProcessor(cookie)
+opener = urllib.request.build_opener(handler)
+
+request = urllib.request.Request(URL_ROOT, postdata, headers)
+try:
+    response = opener.open(request)
+except urllib.error.URLError as e:
+    print(e.reason)
+
+cookie.save(ignore_discard=True, ignore_expires=True)  # 保存cookie到cookie.txt中
+for item in cookie:
+    print('Name = ' + item.name)
+    print('Value = ' + item.value)
+ 
+
+Note: 
+
+1. 不同cookie写入文件方法的解释：
+
+FileCookieJar(filename)：创建FileCookieJar实例，检索cookie信息并将信息存储到文件中，filename是文件名。
+
+MozillaCookieJar(filename)：创建与Mozilla cookies.txt文件兼容的FileCookieJar实例。
+
+LWPCookieJar(filename)：创建与libwww-perl Set-Cookie3文件兼容的FileCookieJar实例。
+
+2. save方法的两个参数的官方解释：
+
+ignore_discard: save even cookies set to be discarded. 即使cookies将被丢弃也将它保存下来
+
+ignore_expires: save even cookies that have expiredThe file is overwritten if it already exists.如果在该文件中cookies已经存在，则覆盖原文件写入
+
+3. python3中如果直接使用http.cookiejar.CookieJar(filename)的方式会出错：self._policy._now = self._now = int(time.time()) AttributeError: 'str' object has no attribute '_now'。注意要将CookieJar改为LWPCookieJar。
+
+3）从文件中获取Cookie并访问
+那么我们已经做到把Cookie保存到文件中了，如果以后想使用，可以利用下面的方法来读取cookie并访问网站，感受一下
+
+import urllib.request
+import urllib.parse
+import urllib.error
+import http.cookiejar
+
+cookie_filename = 'cookie_jar.txt'
+cookie = http.cookiejar.MozillaCookieJar(cookie_filename)
+cookie.load(cookie_filename, ignore_discard=True, ignore_expires=True)
+handler = urllib.request.HTTPCookieProcessor(cookie)
+opener = urllib.request.build_opener(handler)
+
+get_url = 'http://www.jobbole.com/'  # 利用cookie请求访问另一个网址
+get_request = urllib.request.Request(get_url)
+get_response = opener.open(get_request)
+print(get_response.read().decode())
 
 下面介绍第 3 种方法。
 
